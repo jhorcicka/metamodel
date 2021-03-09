@@ -404,7 +404,7 @@ public final class Query extends BaseObject implements Cloneable, Serializable {
             return null;
         }
 
-        if (token.startsWith("'") && token.endsWith("'") && token.length() > 2) {
+        if (token.startsWith("'") && token.endsWith("'")) {
             String stringOperand = token.substring(1, token.length() - 1);
             stringOperand = stringOperand.replaceAll("\\\\'", "'");
             return stringOperand;

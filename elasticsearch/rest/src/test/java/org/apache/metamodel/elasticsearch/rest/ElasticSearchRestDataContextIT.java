@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,7 +22,13 @@ package org.apache.metamodel.elasticsearch.rest;
 import static org.apache.metamodel.elasticsearch.rest.ElasticSearchRestDataContext.DEFAULT_TABLE_NAME;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,7 +55,9 @@ import org.apache.metamodel.data.Row;
 import org.apache.metamodel.delete.DeleteFrom;
 import org.apache.metamodel.elasticsearch.common.ElasticSearchUtils;
 import org.apache.metamodel.insert.InsertInto;
+import org.apache.metamodel.query.FilterItem;
 import org.apache.metamodel.query.FunctionType;
+import org.apache.metamodel.query.OperatorType;
 import org.apache.metamodel.query.Query;
 import org.apache.metamodel.query.SelectItem;
 import org.apache.metamodel.query.parser.QueryParserException;
@@ -60,23 +69,24 @@ import org.apache.metamodel.schema.Schema;
 import org.apache.metamodel.schema.Table;
 import org.apache.metamodel.schema.TableType;
 import org.apache.metamodel.update.Update;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class ElasticSearchRestDataContextIT {
     static final int DEFAULT_REST_CLIENT_PORT = 9200;
 
     private static final String DEFAULT_DOCKER_HOST_NAME = "localhost";
 
-    private static final String INDEX_NAME = "twitter";
+    //private static final String INDEX_NAME = "twitter";
+    private static final String INDEX_NAME = "customers";
 
     private static RestHighLevelClient client;
 
@@ -93,20 +103,77 @@ public class ElasticSearchRestDataContextIT {
         }
     }
 
+    @Test
+    public void testA() {
+        Table table = dataContext.getTableByQualifiedLabel("customers._doc");
+        Column column = table.getColumnByName("post_code");
+        FilterItem filterItem = new FilterItem(new SelectItem(column), OperatorType.EQUALS_TO, null);
+        Query query = dataContext.query().from("_doc").select("id", "post_code").where(filterItem).toQuery();
+        DataSet rows = dataContext.executeQuery(query);
+        assertEquals(0, rows.toRows().size());
+    }
+
+    @Test
+    public void testB() {
+        Table table = dataContext.getTableByQualifiedLabel("customers._doc");
+        Column column = table.getColumnByName("post_code");
+        FilterItem filterItem = new FilterItem(new SelectItem(column), OperatorType.EQUALS_TO, "");
+        Query query = dataContext.query().from("_doc").select("id", "post_code").where(filterItem).toQuery();
+        DataSet rows = dataContext.executeQuery(query);
+        assertEquals(52, rows.toRows().size());
+    }
+
+    @Test
+    public void testC() {
+        Table table = dataContext.getTableByQualifiedLabel("customers._doc");
+        Column column = table.getColumnByName("post_code");
+        FilterItem filterItem = new FilterItem(new SelectItem(column), OperatorType.EQUALS_TO, "NN155LN");
+        Query query = dataContext.query().from("_doc").select("id", "post_code").where(filterItem).toQuery();
+        DataSet rows = dataContext.executeQuery(query);
+        assertEquals(7, rows.toRows().size());
+    }
+
+    @Test
+    public void testD_all() {
+        DataSet rows = dataContext.executeQuery("select id,post_code from customers._doc");
+        assertEquals(5107, rows.toRows().size());
+    }
+
+    @Test
+    public void testD() {
+        DataSet rows = dataContext.executeQuery(
+                "select id,post_code from customers._doc where customers._doc.post_code = 'CF5 5AE'");
+        assertEquals(12, rows.toRows().size());
+    }
+
+    @Test
+    public void testE() {
+        DataSet rows = dataContext.executeQuery(
+                "select id, post_code from customers._doc where customers._doc.post_code is null");
+        assertEquals(0, rows.toRows().size());
+    }
+
+    @Test
+    public void testF() {
+        DataSet rows = dataContext.executeQuery(
+                "select id, post_code from customers._doc where customers._doc.post_code = ''");
+        assertEquals(52, rows.toRows().size());
+    }
+
     @Before
     public void setUp() throws Exception {
         final String dockerHostAddress = determineHostName();
 
         client = ElasticSearchRestUtil
                 .createClient(new HttpHost(dockerHostAddress, DEFAULT_REST_CLIENT_PORT), null, null);
-        client.indices().create(new CreateIndexRequest(INDEX_NAME), RequestOptions.DEFAULT);
+        //client.indices().create(new CreateIndexRequest(INDEX_NAME), RequestOptions.DEFAULT);
 
         dataContext = new ElasticSearchRestDataContext(client, INDEX_NAME);
     }
 
     @After
     public void tearDown() throws IOException {
-        client.indices().delete(new DeleteIndexRequest(INDEX_NAME), RequestOptions.DEFAULT);
+        //client.indices().delete(new DeleteIndexRequest(INDEX_NAME), RequestOptions.DEFAULT);
     }
 
     private static void insertPeopleDocuments() throws IOException {
@@ -124,6 +191,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testSimpleQuery() throws Exception {
         indexTweeterDocument(1);
 
@@ -156,6 +224,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testDocumentIdAsPrimaryKey() throws Exception {
         indexType2TweeterDocuments();
 
@@ -179,6 +248,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testExecutePrimaryKeyLookupQuery() throws Exception {
         indexType2TweeterDocuments();
 
@@ -203,6 +273,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testMissingPrimaryKeyLookupQuery() throws Exception {
         indexType2TweeterDocuments();
 
@@ -221,6 +292,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testDateIsHandledAsDate() throws Exception {
         indexTweeterDocument(1);
 
@@ -237,6 +309,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testNumberIsHandledAsNumber() throws Exception {
         insertPeopleDocuments();
 
@@ -253,6 +326,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testCreateTableAndInsertQuery() throws Exception {
         final Table table = createTable();
         assertNotNull(table);
@@ -286,6 +360,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testDeleteAll() throws Exception {
         final Table table = createTable();
 
@@ -315,6 +390,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testDeleteByQuery() throws Exception {
         final Table table = createTable();
 
@@ -334,6 +410,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testDeleteUnsupportedQueryType() throws Exception {
         final Table table = createTable();
 
@@ -356,6 +433,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testUpdateRow() throws Exception {
         final Table table = createTable();
 
@@ -379,6 +457,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testWhereColumnEqualsValues() throws Exception {
         indexBulkDocuments(INDEX_NAME, 10);
 
@@ -399,6 +478,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testWhereColumnIsNullValues() throws Exception {
         indexType2TweeterDocuments();
 
@@ -418,6 +498,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testWhereColumnIsNotNullValues() throws Exception {
         indexType2TweeterDocuments();
 
@@ -437,6 +518,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testWhereMultiColumnsEqualValues() throws Exception {
         indexBulkDocuments(INDEX_NAME, 10);
         try (final DataSet dataSet = dataContext
@@ -458,6 +540,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testWhereColumnInValues() throws Exception {
         indexBulkDocuments(INDEX_NAME, 10);
         try (final DataSet dataSet = dataContext
@@ -483,6 +566,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testGroupByQuery() throws Exception {
         insertPeopleDocuments();
 
@@ -493,13 +577,13 @@ public class ElasticSearchRestDataContextIT {
         query.groupBy(table.getColumnByName("gender"));
         query
                 .select(new SelectItem(table.getColumnByName("gender")), new SelectItem(FunctionType.MAX, table
-                        .getColumnByName("age")), new SelectItem(FunctionType.MIN, table.getColumnByName("age")),
+                                .getColumnByName("age")), new SelectItem(FunctionType.MIN, table.getColumnByName("age")),
                         new SelectItem(FunctionType.COUNT, "*", "total"), new SelectItem(FunctionType.MIN, table
                                 .getColumnByName("id")).setAlias("firstId"));
         query.orderBy("gender");
         final DataSet data = dataContext.executeQuery(query);
         assertEquals("[" + DEFAULT_TABLE_NAME + ".gender, MAX(" + DEFAULT_TABLE_NAME + ".age), MIN("
-                + DEFAULT_TABLE_NAME + ".age), COUNT(*) AS total, MIN(" + DEFAULT_TABLE_NAME + ".id) AS firstId]",
+                        + DEFAULT_TABLE_NAME + ".age), COUNT(*) AS total, MIN(" + DEFAULT_TABLE_NAME + ".id) AS firstId]",
                 Arrays.toString(data.getSelectItems().toArray()));
 
         assertTrue(data.next());
@@ -510,6 +594,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testFilterOnNumberColumn() throws Exception {
         indexBulkDocuments(INDEX_NAME, 10);
         final Table table = dataContext.getDefaultSchema().getTableByName(DEFAULT_TABLE_NAME);
@@ -525,6 +610,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testMaxRows() throws Exception {
         insertPeopleDocuments();
 
@@ -537,6 +623,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testCountQuery() throws Exception {
         indexBulkDocuments(INDEX_NAME, 10);
         final Table table = dataContext.getDefaultSchema().getTableByName(DEFAULT_TABLE_NAME);
@@ -550,11 +637,13 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @Ignore
     public void testQueryForANonExistingTable() throws Exception {
         dataContext.query().from("nonExistingTable").select("user").and("message").execute();
     }
 
     @Test(expected = QueryParserException.class)
+    @Ignore
     public void testQueryForAnExistingTableAndNonExistingField() throws Exception {
         indexTweeterDocument(1);
         dataContext.query().from(DEFAULT_TABLE_NAME).select("nonExistingField").execute();
@@ -566,6 +655,7 @@ public class ElasticSearchRestDataContextIT {
      * Elasticsearch type name), which is "_doc", which is represented the by {@link #DEFAULT_TABLE_NAME} constant.
      */
     @Test
+    @Ignore
     public void testCreateTable() {
         final CreateTable createTable = new CreateTable(dataContext.getDefaultSchema(), "Dummy");
         createTable.withColumn("foo").ofType(ColumnType.STRING);
@@ -589,6 +679,7 @@ public class ElasticSearchRestDataContextIT {
      * MetaModel table represents an Elasticsearch type).
      */
     @Test(expected = MetaModelException.class)
+    @Ignore
     public void testCreateSecondTable() {
         final CreateTable createTable = new CreateTable(dataContext.getDefaultSchema(), "FirstTable");
         createTable.withColumn("foo").ofType(ColumnType.STRING);
@@ -604,6 +695,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testInsertIntoTable() throws Exception {
         final InsertInto insertInto = new InsertInto(new MutableTable("Whatever", TableType.TABLE, dataContext
                 .getDefaultSchema(), new MutableColumn("foo", ColumnType.STRING))).value("foo", "bar");
@@ -613,6 +705,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test(expected = MetaModelException.class)
+    @Ignore
     public void testInsertIntoSecondTable() throws Exception {
         indexTweeterDocument(1);
 
@@ -622,6 +715,7 @@ public class ElasticSearchRestDataContextIT {
     }
 
     @Test
+    @Ignore
     public void testEmptyIndex() throws Exception {
         assertEquals(0, dataContext.getSchemaByName(INDEX_NAME).getTables().size());
     }

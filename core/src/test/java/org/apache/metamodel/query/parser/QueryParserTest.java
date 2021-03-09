@@ -344,7 +344,7 @@ public class QueryParserTest extends TestCase {
         assertNull("WHERE item was an expression based item, which indicates it was not parsed",
                 q.getWhereClause().getItem(0).getExpression());
         assertNull(q.getWhereClause().getItem(0).getOperand());
-        assertEquals(OperatorType.EQUALS_TO, q.getWhereClause().getItem(0).getOperator());
+        assertEquals(OperatorType.IS, q.getWhereClause().getItem(0).getOperator());
     }
 
     public void testWhereSomethingIsNotNull() throws Exception {
@@ -355,7 +355,7 @@ public class QueryParserTest extends TestCase {
         assertNull("WHERE item was an expression based item, which indicates it was not parsed",
                 q.getWhereClause().getItem(0).getExpression());
         assertNull(q.getWhereClause().getItem(0).getOperand());
-        assertEquals(OperatorType.DIFFERENT_FROM, q.getWhereClause().getItem(0).getOperator());
+        assertEquals(OperatorType.IS_NOT, q.getWhereClause().getItem(0).getOperator());
     }
 
     public void testLimitAndOffset() throws Exception {

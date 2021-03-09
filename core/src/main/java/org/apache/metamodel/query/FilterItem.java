@@ -101,7 +101,8 @@ public class FilterItem extends BaseObject implements QueryItem, Cloneable, IRow
         this(selectItem, operator, operand, null, null, null);
         if (_operand == null) {
             require("Can only use EQUALS or DIFFERENT_FROM operator with null-operand",
-                    _operator == OperatorType.DIFFERENT_FROM || _operator == OperatorType.EQUALS_TO);
+                    _operator == OperatorType.DIFFERENT_FROM || _operator == OperatorType.EQUALS_TO
+                            || _operator == OperatorType.IS || _operator == OperatorType.IS_NOT);
         }
         if (_operator == OperatorType.LIKE || _operator == OperatorType.NOT_LIKE) {
             ColumnType type = _selectItem.getColumn().getType();

@@ -47,8 +47,12 @@ public interface OperatorType extends Serializable {
 
     public static final OperatorType NOT_IN = new OperatorTypeImpl("NOT IN", true);
 
+    public static final OperatorType IS_NOT = new OperatorTypeImpl("IS NOT", true);
+
+    public static final OperatorType IS = new OperatorTypeImpl("IS", true);
+
     public static final OperatorType[] BUILT_IN_OPERATORS = new OperatorType[] { EQUALS_TO, DIFFERENT_FROM, LIKE,
-            NOT_LIKE, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN };
+            NOT_LIKE, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NOT, IS };
 
 /**
      * Determines if this operator requires a space delimiter. Operators that are written using letters usually require
